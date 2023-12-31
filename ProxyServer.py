@@ -17,6 +17,11 @@ class ProxyServer:
         self.serverSocket.listen(socket.SOMAXCONN)
         print("Listening on port " + str(port) + "...")
 
+        #Configuration setting
+        self.filter_enabled = True
+        self.prohibited_words = ["bad","discrimination","violence"]
+        self.insert_text = "by Proxy"
+
     def recvall(self, _socket, timeout = 0.1):
         # recv all data
         data = b""
@@ -58,6 +63,29 @@ class ProxyServer:
             thread = threading.Thread(name= TSAP, target = self.client_proxy, args=(clientSocket, TSAP), daemon=True)
             thread.start()
 
+    def filtering(self, content):
+        if self.filter_enabled:
+            #insert text in the title
+            content = content.replace("<title>", f"<title>{self.insert_text}</title>")
+            #censor prohibited words
+            for word in self.prohibited_words:
+                censored_word = '*'*len(word)
+                content = content.replace(word,censored_word)
+            
+            #remove resources in mp4 format
+            content = content.replace(".mp4","_blocked.mp4")
+
+        return content 
+    
+    def remove_header(self,request):
+        lines = request.decode().split('\r\n')
+        request_lines = []
+        for line in lines:
+            if not line.startswith("Connection: Keep-Alive","Proxy-Connection: Keep-Alive", "Accept-Encoding: gzip"):
+                request_lines.append(line)
+        modified_request = '\r\n'.join(request_lines).encode()
+        return modified_request
+
     def client_proxy(self, clientSocket, TSAP):
         # Wait for client to connect and create a thread for each client
         while 1:
@@ -68,8 +96,6 @@ class ProxyServer:
             
             serverAddress, serverPort = self.parseHost(request)
             serverURL = self.parseURL(request)
-            #Filtering
-            #Censoring
 
             #Serving
             serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -78,9 +104,13 @@ class ProxyServer:
             #     clientSocket.sendall(b"HTTP/1.1 200 OK\r\n\r\n")
             print(request)
             print("------------------")
-            serverSocket.sendall(request)
+            #Filtering
+            modified_request = self.remove_header(request)
+            serverSocket.sendall(modified_request)
             data = self.recvall(serverSocket)
-            clientSocket.sendall(data)
+            #censor content
+            data = self.filtering(data.decode())
+            clientSocket.sendall(data.encode())
             #print(data.decode())
     
     def close(self):

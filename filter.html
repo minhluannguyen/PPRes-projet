@@ -11,7 +11,7 @@
     <a href="/">Back</a>
     <h1>Proxy Configuration</h1>
 
-    <h3>Replace Configuration</h3>
+    <h3>(De)activate Filtering</h3>
     <form action="/filter-enabled" method="post">
         <p>Turn filter on/off:</p>
         <input type="radio" name="isEnabled" value="true" {{isEnable}}> Enable<br>
@@ -19,6 +19,8 @@
         <br>
         <button type="submit">Submit</button>
     </form>
+
+    <h3>Replace Configuration</h3>
     <form action="/replace" method="post">
         <p>Enter replace rules:</p>
         <textarea id="replace" name="replace" rows="10" cols="50">{{replaceContent}}</textarea>

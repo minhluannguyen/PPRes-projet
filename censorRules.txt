@@ -2,5 +2,4 @@ html
 debug
 site
 récompense
-ha
 work

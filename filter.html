@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proxy Configuration</title>
+</head>
+
+<body>
+    <a href="/">Back</a>
+    <h1>Proxy Configuration</h1>
+
+    <h3>Replace Configuration</h3>
+    <form action="/filter-enabled" method="post">
+        <p>Turn filter on/off:</p>
+        <input type="radio" name="isEnabled" value="true" {{isEnable}}> Enable<br>
+        <input type="radio" name="isEnabled" value="false" {{isDisable}}> Disable<br>
+        <br>
+        <button type="submit">Submit</button>
+    </form>
+    <form action="/replace" method="post">
+        <p>Enter replace rules:</p>
+        <textarea id="replace" name="replace" rows="10" cols="50">{{replaceContent}}</textarea>
+        <br>
+        <button type="submit">Submit</button>
+    </form>
+    <br>
+    <h3>Censor Configuration</h3>
+    <form action="/censor" method="post">
+        <p>Enter censor rules:</p>
+        <textarea id="replace" name="replace" rows="10" cols="50">{{censorContent}}</textarea>
+        <br>
+        <button type="submit">Submit</button>
+    </form>
+</body>
+
+</html>

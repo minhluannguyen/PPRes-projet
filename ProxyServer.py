@@ -195,7 +195,7 @@ class ProxyServer():
         self.blockedRulesFile = blockedRulesFile
         self.isEnabledFile = isEnabledFile
 
-        self.isEnabledFilter = self.readListFileRules(self.censorRulesFile)
+        self.isEnabledFilter = self.readFilterRule(self.isEnabledFile)
         self.censorRules = self.readListFileRules(self.censorRulesFile)
         self.replaceRules = self.readListFileRules(self.replaceRulesFile)
         self.blockedRules = self.readListFileRules(self.blockedRulesFile)
@@ -296,17 +296,17 @@ class ProxyServer():
 
             # Delete all mp4 resources
             body = re.sub(rb'<source.*?type="video/mp4".*?>', b'', body)
-
-            # Censor forhibited words, ignore the html tags too ...
-            for word in self.censorRules:
-                body = re.sub(rb"(?<!<[^>])(%s)(?![^<]*>)" % word, b'*' * len(word), body, flags=re.IGNORECASE)
-
+            
             # Replace word in giving list            
             for rule in self.replaceRules:
                 key = rule.split(b':')[0]
                 val = rule.split(b':')[1]
                 body = re.sub(rb"(?<!<[^>])(%s)(?![^<]*>)" % key, val, body, flags=re.IGNORECASE)
-            
+
+            # Censor forhibited words, ignore the html tags too ...
+            for word in self.censorRules:
+                body = re.sub(rb"(?<!<[^>])(%s)(?![^<]*>)" % word, b'*' * len(word), body, flags=re.IGNORECASE)
+
             # Recreate response
             data = b"\r\n\r\n".join([header, body])
         except Exception as e:
@@ -354,7 +354,7 @@ class ProxyServer():
         return False  # Access allowed
     
     def updateConfig(self):
-        self.isEnabledFilter = self.readListFileRules(self.censorRulesFile)
+        self.isEnabledFilter = self.readFilterRule(self.isEnabledFile)
         self.censorRules = self.readListFileRules(self.censorRulesFile)
         self.replaceRules = self.readListFileRules(self.replaceRulesFile)
         self.blockedRules = self.readListFileRules(self.blockedRulesFile)

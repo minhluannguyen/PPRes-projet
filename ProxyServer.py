@@ -4,7 +4,7 @@ import signal
 import sys
 
 class ProxyServer:
-    def __init__(self, port):
+    def __init__(self, port, ):
         signal.signal(signal.SIGINT, self.close)
         self.port = port
 
@@ -16,11 +16,6 @@ class ProxyServer:
         self.serverSocket.bind(('', self.port))
         self.serverSocket.listen(socket.SOMAXCONN)
         print("Listening on port " + str(port) + "...")
-
-        #Configuration setting
-        self.filter_enabled = True
-        self.prohibited_words = ["bad","discrimination","violence"]
-        self.insert_text = "by Proxy"
 
     def recvall(self, _socket, timeout = 0.1):
         # recv all data
@@ -63,28 +58,19 @@ class ProxyServer:
             thread = threading.Thread(name= TSAP, target = self.client_proxy, args=(clientSocket, TSAP), daemon=True)
             thread.start()
 
-    def filtering(self, content):
-        if self.filter_enabled:
-            #insert text in the title
-            content = content.replace("<title>", f"<title>{self.insert_text}</title>")
-            #censor prohibited words
-            for word in self.prohibited_words:
-                censored_word = '*'*len(word)
-                content = content.replace(word,censored_word)
-            
-            #remove resources in mp4 format
-            content = content.replace(".mp4","_blocked.mp4")
-
-        return content 
-    
-    def remove_header(self,request):
-        lines = request.decode().split('\r\n')
-        request_lines = []
-        for line in lines:
-            if not line.startswith("Connection: Keep-Alive","Proxy-Connection: Keep-Alive", "Accept-Encoding: gzip"):
-                request_lines.append(line)
-        modified_request = '\r\n'.join(request_lines).encode()
-        return modified_request
+    def block_access(self, request):
+        url = request.decode().split(' ')[1].strip()
+        try:
+            with open('blockAccess.txt', 'r') as file:
+                blocked_urls = [line.strip() for line in file.readlines()]
+                # print(blocked_urls)
+                # print("------------------")
+                if url in blocked_urls:
+                    return True  # Access blocked
+        except Exception as e:
+            print(e.args)
+            sys.exit(1)
+        return False  # Access allowed
 
     def client_proxy(self, clientSocket, TSAP):
         # Wait for client to connect and create a thread for each client
@@ -97,6 +83,16 @@ class ProxyServer:
             serverAddress, serverPort = self.parseHost(request)
             serverURL = self.parseURL(request)
 
+            # Check if access is blocked
+            if self.block_access(request):
+                # Access is blocked, you can close the connection or send a notification
+
+                clientSocket.sendall(b"HTTP/1.1 403 Forbidden\r\n\r\nAccess to this URL is blocked.")
+                clientSocket.close()
+
+            #Filtering
+            #Censoring
+
             #Serving
             serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             serverSocket.connect((serverAddress, serverPort))
@@ -104,13 +100,9 @@ class ProxyServer:
             #     clientSocket.sendall(b"HTTP/1.1 200 OK\r\n\r\n")
             print(request)
             print("------------------")
-            #Filtering
-            modified_request = self.remove_header(request)
-            serverSocket.sendall(modified_request)
+            serverSocket.sendall(request)
             data = self.recvall(serverSocket)
-            #censor content
-            data = self.filtering(data.decode())
-            clientSocket.sendall(data.encode())
+            clientSocket.sendall(data)
             #print(data.decode())
     
     def close(self):
@@ -119,6 +111,7 @@ class ProxyServer:
 
 server = ProxyServer(1234)
 server.start()
+
 
 
 

@@ -4,7 +4,7 @@ import signal
 import sys
 
 class ProxyServer:
-    def __init__(self, port, ):
+    def __init__(self, port):
         signal.signal(signal.SIGINT, self.close)
         self.port = port
 
@@ -58,20 +58,6 @@ class ProxyServer:
             thread = threading.Thread(name= TSAP, target = self.client_proxy, args=(clientSocket, TSAP), daemon=True)
             thread.start()
 
-    def block_access(self, request):
-        url = request.decode().split(' ')[1].strip()
-        try:
-            with open('blockAccess.txt', 'r') as file:
-                blocked_urls = [line.strip() for line in file.readlines()]
-                # print(blocked_urls)
-                # print("------------------")
-                if url in blocked_urls:
-                    return True  # Access blocked
-        except Exception as e:
-            print(e.args)
-            sys.exit(1)
-        return False  # Access allowed
-
     def client_proxy(self, clientSocket, TSAP):
         # Wait for client to connect and create a thread for each client
         while 1:
@@ -82,14 +68,6 @@ class ProxyServer:
             
             serverAddress, serverPort = self.parseHost(request)
             serverURL = self.parseURL(request)
-
-            # Check if access is blocked
-            if self.block_access(request):
-                # Access is blocked, you can close the connection or send a notification
-
-                clientSocket.sendall(b"HTTP/1.1 403 Forbidden\r\n\r\nAccess to this URL is blocked.")
-                clientSocket.close()
-
             #Filtering
             #Censoring
 
@@ -111,7 +89,6 @@ class ProxyServer:
 
 server = ProxyServer(1234)
 server.start()
-
 
 
 

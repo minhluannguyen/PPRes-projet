@@ -6,7 +6,10 @@ import re
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import parse_qs
 
+# Class for handle proxy interface website
 class ProxyConfig(BaseHTTPRequestHandler):
+
+    # Handle GET request
     def do_GET(self):
         # Get the path from the request
         path = self.path
@@ -37,6 +40,7 @@ class ProxyConfig(BaseHTTPRequestHandler):
             response_code = 404
             content = b'File Not Found'
 
+        # Replace placeholder with pre-defined rules
         if flag_filter:
             try:
                 paramsEnabled = open("filterRule.txt", 'rb').read()
@@ -60,12 +64,6 @@ class ProxyConfig(BaseHTTPRequestHandler):
         if flag_block:
             try:
                 paramsBlock = open("blockAccessRules.txt", 'rb').read()
-                print(paramsBlock)
-                # if (paramsEnabled == b"true"):
-                #     content = content.replace(b"{{isEnable}}", b"checked")
-                # elif (paramsEnabled == b"false"):
-                #     content = content.replace(b"{{isDisable}}", b"checked")
-
                 content = content.replace(b"{{blockContent}}", paramsBlock)
             except FileNotFoundError:
                 response_code = 404
@@ -80,6 +78,7 @@ class ProxyConfig(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(content)
 
+    # Handle POST request
     def do_POST(self):
         # Get the path from the request
         path = self.path
@@ -158,7 +157,6 @@ class ProxyConfig(BaseHTTPRequestHandler):
                 
                 # Update
                 ruleFile.write(params)
-                
                 ruleFile.close()
             except FileNotFoundError:
                 response_code = 404
@@ -206,6 +204,8 @@ class ProxyConfig(BaseHTTPRequestHandler):
         self.send_response(301)  # or 302 for temporary redirection
         self.send_header('Location', redirect_path)
         self.end_headers()
+
+# Class for handle proxy
 class ProxyServer():
     def __init__(self, port, censorRulesFile, replaceRulesFile, blockedRulesFile, isEnabledFile):
         signal.signal(signal.SIGINT, self.close)
@@ -227,6 +227,7 @@ class ProxyServer():
         self.proxySocket.listen(socket.SOMAXCONN)
         print("Listening on port " + str(port) + "...")
 
+    #Start the web server
     def startServer(self):
         server_address = ('', 8080)
         httpd = HTTPServer(server_address, ProxyConfig)
@@ -340,11 +341,11 @@ class ProxyServer():
             pass
         return data
 
-    #get client's URL from request
+    # Get client's URL from request
     def parseURL(self, request):
         return request.decode().split(' ')[1]
     
-    #Get client's hostname from request
+    # Get client's hostname from request
     def parseHost(self, request):
         if b"Host" in request:
             hostPos = request.find(b"Host") + 6
@@ -361,7 +362,6 @@ class ProxyServer():
         return data, 80
     
     def start(self):
-
         #Start web config
         thread = threading.Thread(name= "Config", target = self.startServer, daemon=True)
         thread.start()
@@ -373,12 +373,14 @@ class ProxyServer():
             thread = threading.Thread(name= TSAP, target = self.clientProxy, args=(clientSocket, TSAP), daemon=True)
             thread.start()
 
+    # Handle block access
     def blockAccess(self, url):
         for blocked_url in self.blockedRules:
             if re.search(blocked_url.decode(), url):
                 return True  # Access blocked            
         return False  # Access allowed
     
+    # Re-read rule text file
     def updateConfig(self):
         self.isEnabledFilter = self.readFilterRule(self.isEnabledFile)
         self.censorRules = self.readListFileRules(self.censorRulesFile)

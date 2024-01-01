@@ -1,0 +1,3 @@
+http://p-fb.net/master1
+http://p-fb.net/master1/gpgpu
+http://p-fb.net/master1/gpgpu/fiches/GPGPU_TD_2_2023_2024.pdf

@@ -20,11 +20,14 @@ class ProxyConfig(BaseHTTPRequestHandler):
 
         # Map different paths to corresponding HTML files
         flag_filter = False
+        flag_block = False
         if path == '/filter':
             file_to_serve = 'filter.html'
             flag_filter = True
+
         elif path == '/block':
             file_to_serve = 'blockAccess.html'
+            flag_block = True
         
         try:
             # Open and read the file content
@@ -47,6 +50,23 @@ class ProxyConfig(BaseHTTPRequestHandler):
                     content = content.replace(b"{{isDisable}}", b"checked")
                 content = content.replace(b"{{replaceContent}}", paramsReplace)
                 content = content.replace(b"{{censorContent}}", paramsCensor)
+            except FileNotFoundError:
+                response_code = 404
+                content = b'Rule Not Found'
+                self.send_response(response_code)
+                self.wfile.write(content)
+                return
+            
+        if flag_block:
+            try:
+                paramsBlock = open("blockAccessRules.txt", 'rb').read()
+                print(paramsBlock)
+                # if (paramsEnabled == b"true"):
+                #     content = content.replace(b"{{isEnable}}", b"checked")
+                # elif (paramsEnabled == b"false"):
+                #     content = content.replace(b"{{isDisable}}", b"checked")
+
+                content = content.replace(b"{{blockContent}}", paramsBlock)
             except FileNotFoundError:
                 response_code = 404
                 content = b'Rule Not Found'
@@ -170,7 +190,7 @@ class ProxyConfig(BaseHTTPRequestHandler):
                 
                 # Update
                 ruleFile.write(params)
-                content = content.replace("{{censorContent}}", params)
+                content = content.replace("{{blockContent}}", params)
                 
                 ruleFile.close()
             except FileNotFoundError:
@@ -232,6 +252,12 @@ class ProxyServer():
         except Exception as e:
             print(e.args)
             sys.exit(1)
+    
+    def readFile(self, file):
+        # read file from local web source
+        with open(file, "rb") as f:
+            data = f.read()
+        return data
 
     def recvall(self, socket, timeout = 1):
         # recv all data
@@ -297,7 +323,7 @@ class ProxyServer():
             # Delete all mp4 resources
             body = re.sub(rb'<source.*?type="video/mp4".*?>', b'', body)
 
-            # Censor forhibited words, ignore the html tags too ...
+            # Censor prohibited words, ignore the html tags too ...
             for word in self.censorRules:
                 body = re.sub(rb"(?<!<[^>])(%s)(?![^<]*>)" % word, b'*' * len(word), body, flags=re.IGNORECASE)
 
@@ -377,7 +403,7 @@ class ProxyServer():
         try:
             if self.blockAccess(serverURL):
                 # Access is blocked, you can close the connection or send a notification
-                clientSocket.sendall(b"HTTP/1.1 403 Forbidden\r\n\r\nAccess to this URL is blocked.")
+                clientSocket.sendall(self.readFile("Blocked.html"))
                 clientSocket.close()
                 return
         except Exception as e:

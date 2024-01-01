@@ -247,7 +247,7 @@ class ProxyServer():
             pass
         return data
     
-    def forwardAata(self, source, destination):
+    def forwardData(self, source, destination):
         source.settimeout(1)
         destination.settimeout(1)
         while True:
@@ -393,7 +393,7 @@ class ProxyServer():
         if serverPort == 443:
             try:
                 clientSocket.sendall(b"HTTP/1.1 200 Connection established\r\n\r\n")
-                self.forwardAata(serverSocket, clientSocket)
+                self.forwardData(serverSocket, clientSocket)
             except Exception as e:
                 print(e.args)
                 clientSocket.close()

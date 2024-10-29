@@ -19,17 +19,17 @@ class ProxyConfig(BaseHTTPRequestHandler):
         content_type = 'text/html'
 
         # Set the default file to serve (index.html)
-        file_to_serve = 'index.html'
+        file_to_serve = './html/index.html'
 
         # Map different paths to corresponding HTML files
         flag_filter = False
         flag_block = False
         if path == '/filter':
-            file_to_serve = 'filter.html'
+            file_to_serve = './html/filter.html'
             flag_filter = True
 
         elif path == '/block':
-            file_to_serve = 'blockAccess.html'
+            file_to_serve = './html/blockAccess.html'
             flag_block = True
         
         try:
@@ -43,9 +43,9 @@ class ProxyConfig(BaseHTTPRequestHandler):
         # Replace placeholder with pre-defined rules
         if flag_filter:
             try:
-                paramsEnabled = open("filterRule.txt", 'rb').read()
-                paramsReplace = open("replaceRules.txt", 'rb').read()
-                paramsCensor = open("censorRules.txt", 'rb').read()
+                paramsEnabled = open("./rules/filterRule.txt", 'rb').read()
+                paramsReplace = open("./rules/replaceRules.txt", 'rb').read()
+                paramsCensor = open("./rules/censorRules.txt", 'rb').read()
                 print(paramsEnabled, paramsReplace, paramsCensor)
                 
                 if (paramsEnabled == b"true"):
@@ -63,7 +63,7 @@ class ProxyConfig(BaseHTTPRequestHandler):
             
         if flag_block:
             try:
-                paramsBlock = open("blockAccessRules.txt", 'rb').read()
+                paramsBlock = open("./rules/blockAccessRules.txt", 'rb').read()
                 content = content.replace(b"{{blockContent}}", paramsBlock)
             except FileNotFoundError:
                 response_code = 404
@@ -85,7 +85,7 @@ class ProxyConfig(BaseHTTPRequestHandler):
         redirect_path = '/'
         # Map to different corresponding paths 
         if path == '/filter-enabled':
-            rule_write = 'filterRule.txt'
+            rule_write = './rules/filterRule.txt'
 
             # Handling POST requests
             content_length = int(self.headers['Content-Length'])
@@ -113,7 +113,7 @@ class ProxyConfig(BaseHTTPRequestHandler):
             
             redirect_path = "/filter"
         elif path == '/replace':
-            rule_write = 'replaceRules.txt'
+            rule_write = './rules/replaceRules.txt'
 
             # Handling POST requests
             content_length = int(self.headers['Content-Length'])
@@ -140,7 +140,7 @@ class ProxyConfig(BaseHTTPRequestHandler):
             
             redirect_path = "/filter"
         elif path == '/censor':
-            rule_write = 'censorRules.txt'
+            rule_write = './rules/censorRules.txt'
 
             # Handling POST requests
             content_length = int(self.headers['Content-Length'])
@@ -167,8 +167,8 @@ class ProxyConfig(BaseHTTPRequestHandler):
             
             redirect_path = "/filter"
         elif path == '/block':
-            rule_to_serve = 'blockAccess.html'
-            rule_write = 'blockAccessRules.txt'
+            rule_to_serve = './html/blockAccess.html'
+            rule_write = './rules/blockAccessRules.txt'
 
             # Handling POST requests
             content_length = int(self.headers['Content-Length'])
@@ -405,7 +405,7 @@ class ProxyServer():
         try:
             if self.blockAccess(serverURL):
                 # Access is blocked, you can close the connection or send a notification
-                clientSocket.sendall(self.readFile("Blocked.html"))
+                clientSocket.sendall(self.readFile("./html/Blocked.html"))
                 clientSocket.close()
                 return
         except Exception as e:
@@ -450,9 +450,9 @@ class ProxyServer():
         sys.exit(0)
 
 server = ProxyServer(port=1234,
-                     censorRulesFile="censorRules.txt",
-                     replaceRulesFile="replaceRules.txt",
-                     blockedRulesFile="blockAccessRules.txt",
-                     isEnabledFile="filterRule.txt"
+                     censorRulesFile="./rules/censorRules.txt",
+                     replaceRulesFile="./rules/replaceRules.txt",
+                     blockedRulesFile="./rules/blockAccessRules.txt",
+                     isEnabledFile="./rules/filterRule.txt"
                     )
 server.start()
